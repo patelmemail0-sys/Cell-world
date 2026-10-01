@@ -8,7 +8,7 @@ export interface Reference {
 
 const ALBERTS = 'Alberts B, Heald R, Johnson A, Morgan D, Raff M, Roberts K, Walter P. Molecular Biology of the Cell, 7th ed. W. W. Norton, 2022';
 const LODISH = 'Lodish H, Berk A, Kaiser CA, et al. Molecular Cell Biology, 9th ed. Macmillan Learning, 2021';
-const LEHNINGER = 'Nelson DL, Cox MM. Lehninger Principles of Biochemistry, 8th ed. Macmillan Learning, 2021';
+const LEHNINGER = 'Nelson DL, Cox MM, Hoskins AA. Lehninger Principles of Biochemistry, 8th ed. Macmillan Learning, 2021';
 
 const list: Reference[] = [
   { key: 'alberts-membranes', citation: `${ALBERTS}. Chapter on membrane structure.` },
@@ -21,6 +21,7 @@ const list: Reference[] = [
   { key: 'alberts-cytoskeleton', citation: `${ALBERTS}. Chapter on the cytoskeleton.` },
   { key: 'alberts-proteins', citation: `${ALBERTS}. Chapter on proteins (protein function, folding and degradation).` },
   { key: 'alberts-signaling', citation: `${ALBERTS}. Chapter on cell signaling.` },
+  { key: 'alberts-ecm', citation: `${ALBERTS}. Chapter on cell junctions and the extracellular matrix.` },
   { key: 'lodish-traffic', citation: `${LODISH}. Chapter on vesicular traffic, secretion and endocytosis.` },
   { key: 'lodish-cytoskeleton', citation: `${LODISH}. Chapters on microfilaments and microtubules.` },
   { key: 'lodish-energy', citation: `${LODISH}. Chapter on cellular energetics.` },

@@ -41,7 +41,7 @@ export const CODEX_EXTRA: CodexEntry[] = [
     realRate: 'Adhesions assemble and mature over seconds to minutes',
     accuracy:
       'The matrix is drawn as a sparse set of fibrillar collagen fibres just outside the cell so you can see through it; a real islet basement membrane is a continuous sheet of laminin and collagen IV, and the gel of proteoglycans between fibres is not drawn. You view it through the plasma membrane because the player stays inside the cell.',
-    references: ['alberts-cytoskeleton', 'alberts-signaling'],
+    references: ['alberts-ecm'],
   },
   {
     id: 'collagen-fibril',
