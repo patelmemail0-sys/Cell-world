@@ -106,7 +106,8 @@ export class Cytosol implements Organelle {
     const small = blob(0.21, 2, 0.3, 6, [1, 1.1, 1]);
     const showcase = new THREE.Vector3(0.52, 0.44, 0.73).normalize();
     for (let i = 0; i < HEROES; i++) {
-      const dir = i === 0 ? showcase.clone() : new THREE.Vector3(...rng.unit());
+      // The first one sits near the membrane showcase, off to one side of the view outward.
+      const dir = i === 0 ? showcase.clone().add(new THREE.Vector3(-0.12, 0.08, 0)).normalize() : new THREE.Vector3(...rng.unit());
       const p = dir.clone().multiply(this.radii).multiplyScalar(i === 0 ? 0.9 : rng.range(0.7, 0.9));
       const grp = new THREE.Group();
       grp.position.copy(p);

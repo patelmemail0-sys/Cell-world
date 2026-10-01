@@ -14,6 +14,8 @@ export interface BoundSite {
   pos: THREE.Vector3;
   /** Points from the membrane into the cytosol. */
   normal: THREE.Vector3;
+  /** True on the outward face of a stack's outermost cisterna, which faces open cytosol. */
+  open: boolean;
 }
 
 export class RoughER implements Organelle {
@@ -68,7 +70,7 @@ export class RoughER implements Organelle {
             const rr = s + face * (HALF + 0.004);
             const pos = new THREE.Vector3(u.x * radii.x, u.y * radii.y, u.z * radii.z).multiplyScalar(rr).add(center);
             const normal = new THREE.Vector3(u.x / radii.x, u.y / radii.y, u.z / radii.z).normalize().multiplyScalar(face);
-            this.boundSites.push({ pos, normal });
+            this.boundSites.push({ pos, normal, open: face === 1 && k === cap.shells.length - 1 });
           }
         }
         // ER exit sites sit on the rim nearest the Golgi.
@@ -78,7 +80,7 @@ export class RoughER implements Organelle {
           const pos = new THREE.Vector3(rimDir.x * radii.x, rimDir.y * radii.y, rimDir.z * radii.z).multiplyScalar(s).add(center);
           const normal = pos.clone().sub(center).normalize();
           const outward = golgi.clone().sub(pos).normalize().lerp(normal, 0.3).normalize();
-          this.exitSites.push({ pos, normal: outward });
+          this.exitSites.push({ pos, normal: outward, open: true });
         }
       });
     });
@@ -95,7 +97,7 @@ export class RoughER implements Organelle {
     // Designated site for travel and the story: outermost shell, facing the Golgi side.
     const want = golgi.clone().sub(center).normalize();
     const designated = this.boundSites
-      .filter((s) => s.normal.dot(s.pos.clone().sub(center)) > 0)
+      .filter((s) => s.open)
       .reduce((best, s) => (score(s) > score(best) ? s : best), this.boundSites[0]);
     function score(s: BoundSite): number {
       return s.pos.clone().sub(center).normalize().dot(want) + s.pos.distanceTo(center) * 0.004;
@@ -110,13 +112,14 @@ export class RoughER implements Organelle {
 
     // SRP docking demos: a ribosome that has just started a secretory protein is escorted
     // to the membrane by the signal recognition particle.
+    const openSites = this.boundSites.filter((s) => s.open && s !== d).sort((a, b) => a.pos.distanceTo(d.pos) - b.pos.distanceTo(d.pos));
     for (let i = 0; i < 3; i++) {
-      const site = this.boundSites[1 + i * 7];
+      const site = openSites[4 + i * 9];
       const demo = new DockingDemo(site, i * 3.1, ctx);
       this.docking.push(demo);
       this.group.add(demo.group);
       kit.lod(demo.group, site.pos, 30);
-      if (i === 0) kit.anchor('srp', () => demo.srpWorld(), site.pos.clone().addScaledVector(site.normal, 4.5).add(new THREE.Vector3(0, 1.2, 0)));
+      if (i === 0) kit.anchor('srp', site.pos.clone().addScaledVector(site.normal, 0.3), site.pos.clone().addScaledVector(site.normal, 2.0).addScaledVector(perpendicular(site.normal), 3.0));
     }
   }
 
@@ -161,10 +164,6 @@ class DockingDemo {
     ctx.kit.pickable(small, { entity: 'small-subunit' });
     ctx.kit.pickable(this.srp, { entity: 'srp' });
     ctx.kit.pickable(this.receptor, { entity: 'srp' });
-  }
-
-  srpWorld(): THREE.Vector3 {
-    return this.srp.getWorldPosition(new THREE.Vector3());
   }
 
   update(pt: number): void {

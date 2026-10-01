@@ -107,7 +107,9 @@ export function buildLayout(seed = LAYOUT_SEED): Layout {
     { center: SPAWN, radius: 7 },
     { center: [SPAWN[0] * 0.75, SPAWN[1] * 0.75, SPAWN[2] * 0.75], radius: 6 },
   ];
-  const free = (p: V3, r: number, pad = 0.6): boolean => occupied.every((o) => dist(p, o.center) > o.radius + r + pad);
+  const capsules: Capsule[] = [];
+  const free = (p: V3, r: number, pad = 0.6): boolean =>
+    occupied.every((o) => dist(p, o.center) > o.radius + r + pad) && capsules.every((c) => capsuleSdf(p, c) > r + pad);
   const insideCell = (p: V3, margin: number): boolean => ellipsoidRatio(p, [0, 0, 0], cellRadii) < margin;
   const nucRatio = (p: V3): number => ellipsoidRatio(p, nucleus.center, nucleus.radii);
   const inErRegion = (p: V3, pad: number): boolean => {
@@ -137,8 +139,14 @@ export function buildLayout(seed = LAYOUT_SEED): Layout {
     dir = norm(sub(dir, scale(radial, dot(dir, radial) * 0.8)));
     const reach = length / 2;
     if (!free(p, reach * 0.8)) continue;
-    mitochondria.push({ center: p, dir, length, radius });
-    occupied.push({ center: p, radius: reach * 0.85 });
+    // Check both ends too: a mitochondrion is long, and its centre alone says little.
+    const tipA = add(p, scale(dir, reach - radius));
+    const tipB = add(p, scale(dir, -(reach - radius)));
+    if (!free(tipA, radius) || !free(tipB, radius) || nucRatio(tipA) < 1.45 || nucRatio(tipB) < 1.45) continue;
+    if (!insideCell(tipA, 0.9) || !insideCell(tipB, 0.9) || inErRegion(tipA, 0.2) || inErRegion(tipB, 0.2)) continue;
+    const cap: Capsule = { center: p, dir, length, radius };
+    mitochondria.push(cap);
+    capsules.push(cap);
   }
 
   const scatter = (count: number, minR: number, maxR: number, rMin: number, rMax: number, avoidEr = true): Ball[] => {
@@ -181,6 +189,7 @@ export function buildLayout(seed = LAYOUT_SEED): Layout {
   for (let tries = 0; proteasomes.length < 150 && tries < 8000; tries++) {
     const p = randomInCell(0.2, 0.93);
     if (nucRatio(p) < 1.05 && nucRatio(p) > 0.95) continue; // not inside the envelope itself
+    if (inErRegion(p, 0.04)) continue;
     if (!free(p, 0.9, 0.1)) continue;
     proteasomes.push(p);
   }

@@ -87,8 +87,8 @@ diffuseColor.rgb *= mix(0.6, 1.05, band) * strand;`,
     const s0 = sites[0];
     kit.anchor('integrin', s0.pos, s0.pos.clone().addScaledVector(s0.normal, -4));
     const out = showcase.clone().multiply(radii);
-    kit.anchor('extracellular-matrix', out.clone().multiplyScalar(1.04), out.clone().multiplyScalar(0.9));
-    kit.anchor('collagen-fibril', out.clone().multiplyScalar(1.04), out.clone().multiplyScalar(0.93));
+    kit.anchor('extracellular-matrix', out.clone().multiplyScalar(1.04), out.clone().multiplyScalar(0.7));
+    kit.anchor('collagen-fibril', out.clone().multiplyScalar(1.04), out.clone().multiplyScalar(0.74));
   }
 
   getProcessProgress(entityId: string): number | null {

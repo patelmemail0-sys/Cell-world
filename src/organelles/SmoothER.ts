@@ -83,7 +83,7 @@ export class SmoothER implements Organelle {
       mesh.computeBoundingSphere();
       this.group.add(mesh);
       kit.pickable(mesh, { entity: id });
-      kit.anchor(id, sites[0].pos, sites[0].pos.clone().addScaledVector(sites[0].normal, 2.2));
+      kit.anchor(id, sites[0].pos, kit.vantage(sites[0].pos, 2.2, 0.6, sites[0].normal));
       return sites;
     };
     this.serca = new NearSites(make('serca', sercaGeo(), 0xffa040, 90), 5, 12);

@@ -13,6 +13,11 @@ export interface PickTag {
   nearDist?: number;
   /** Membranes that the cutaway mode fades; skipped by the picker while x-ray is on. */
   xray?: boolean;
+  /**
+   * For nearly invisible skins: if something else is hit within this distance behind the
+   * skin, the scanner reports that instead.
+   */
+  passThrough?: number;
 }
 
 export interface Compartment {

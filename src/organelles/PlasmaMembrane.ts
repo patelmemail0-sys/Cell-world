@@ -60,7 +60,7 @@ export class PlasmaMembrane implements Organelle {
     });
     const shell = new THREE.Mesh(shellGeo, this.shellMat);
     this.group.add(shell);
-    kit.pickable(shell, { entity: 'plasma-membrane' });
+    kit.pickable(shell, { entity: 'plasma-membrane', passThrough: 4 });
     kit.membrane(shell, { depth: 0, xray: false, contains: () => true });
 
     // --- membrane proteins ------------------------------------------------------------

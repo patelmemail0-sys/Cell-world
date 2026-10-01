@@ -54,7 +54,8 @@ export class Proteasomes implements Organelle {
     this.substrate = particles.pool(ACTIVE, 0xff9ac0, 0.2);
     this.peptides = particles.pool(ACTIVE * 4, 0xffc6dc, 0.07);
 
-    const s0 = sites[0];
+    // Proteasomes work in the nucleus too, but the one you travel to is out in the cytosol.
+    const s0 = sites.find((s) => kit.compartmentAt(s.pos).label === 'Cytosol') ?? sites[0];
     const side = new THREE.Vector3(1, 0.3, 0.5).normalize();
     const view = kit.vantage(s0.pos, 1.9, 0.8, side);
     for (const id of ['proteasome', 'core-20s', 'cap-19s', 'ubiquitin']) kit.anchor(id, s0.pos, view);

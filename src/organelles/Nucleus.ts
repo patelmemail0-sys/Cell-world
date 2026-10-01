@@ -108,7 +108,8 @@ export class Nucleus implements Organelle {
     this.poreCargo = particles.pool(6 * 4, 0x9fffc0, 0.2);
 
     // Designated pore for travel and the story: the one facing the spawn side.
-    const facing = new THREE.Vector3(0.62, 0.3, 0.72).normalize();
+    // The side of the nucleus that the rough ER leaves uncovered.
+    const facing = new THREE.Vector3(0.78, 0.12, 0.6).normalize();
     const mainPore = poreSites.reduce((best, s) => (s.normal.dot(facing) > best.normal.dot(facing) ? s : best), poreSites[0]);
     kit.anchor('nuclear-pore', mainPore.pos, mainPore.pos.clone().addScaledVector(mainPore.normal, 3.2).add(new THREE.Vector3(0, 1.3, 0)));
     kit.anchor('nucleus', this.center, kit.vantage(this.center, this.radii.x + 17, this.radii.x + 9, facing));

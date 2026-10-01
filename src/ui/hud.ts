@@ -229,11 +229,14 @@ export class Landmarks {
     }
     // Only the nearest few, so the view never fills with text.
     shown.sort((a, b) => a.d - b.d);
-    shown.forEach((s, i) => {
-      if (i >= 5) {
+    const placed: { x: number; y: number }[] = [];
+    shown.forEach((s) => {
+      const crowded = placed.length >= 5 || placed.some((p) => Math.abs(p.x - s.x) < 170 && Math.abs(p.y - s.y) < 30);
+      if (crowded) {
         s.el.style.opacity = '0';
         return;
       }
+      placed.push(s);
       s.el.style.opacity = (s.a * 0.9).toFixed(2);
       s.el.style.transform = `translate(${s.x.toFixed(0)}px, ${(s.y - 8).toFixed(0)}px)`;
       (s.el.lastElementChild as HTMLElement).textContent = `${formatNm(unitsToNm(s.d))} away`;

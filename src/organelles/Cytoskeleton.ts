@@ -53,10 +53,12 @@ export class Cytoskeleton implements Organelle {
   private readonly dyneinPos = new THREE.Vector3();
   private readonly dyneinView = new THREE.Vector3();
   private stepProgress = 0;
+  private readonly kit: BuildContext['kit'];
   private tipProgress = 0;
 
   constructor(layout: Layout, ctx: BuildContext) {
     const { kit, rng, particles } = ctx;
+    this.kit = kit;
     const origin = v3(layout.centrosome.center);
     const nuc = layout.nucleus;
     const nucRatio = (p: THREE.Vector3) => ellipsoidRatio([p.x, p.y, p.z], nuc.center, nuc.radii);
@@ -255,15 +257,27 @@ diffuseColor.rgb *= mix(0.62, 1.0, pf) * mix(0.72, 1.12, dimer);`,
     const t0 = tracks[0];
     const midPt = t0.pts[Math.floor(SAMPLES / 2)];
     kit.anchor('cytoskeleton', origin, kit.vantage(origin, 18, 5, new THREE.Vector3(12, 7, 12)));
-    kit.anchor('microtubule', midPt, midPt.clone().add(perpendicular(t0.pts[SAMPLES].clone().sub(t0.pts[0]).normalize()).multiplyScalar(2.6)));
+    kit.anchor('microtubule', midPt, kit.vantage(midPt, 2.8, 0.9, perpendicular(t0.pts[SAMPLES].clone().sub(t0.pts[0]).normalize())));
     kit.anchor('kinesin', () => this.motorPos, () => this.motorView);
     kit.anchor('dynein', () => this.dyneinPos, () => this.dyneinView);
     const tip0 = this.tips[0];
     kit.anchor('tubulin-dimer', tip0.base, tip0.base.clone().addScaledVector(perpendicular(tip0.dir), 2.2).addScaledVector(tip0.dir, 1));
     const cortex = new THREE.Vector3(0.52, 0.44, 0.73).normalize().multiply(radii).multiplyScalar(0.965);
     kit.anchor('actin-filament', cortex, cortex.clone().multiplyScalar(0.93));
-    const ifPt = new THREE.Vector3(0.62, 0.3, 0.72).normalize().multiply(nr).multiplyScalar(1.15).add(nucCenter);
-    kit.anchor('intermediate-filament', ifPt, ifPt.clone().add(ifPt.clone().sub(nucCenter).normalize().multiplyScalar(3.5)));
+    const ifPt = new THREE.Vector3(0.78, 0.12, 0.6).normalize().multiply(nr).multiplyScalar(1.15).add(nucCenter);
+    kit.anchor('intermediate-filament', ifPt, kit.vantage(ifPt, 4, 1.2, ifPt.clone().sub(nucCenter)));
+  }
+
+  /**
+   * Where to watch a walking motor from: beside it, on whichever side is open cytosol, so the
+   * camera never ends up inside an organelle the track happens to pass.
+   */
+  private placeView(out: THREE.Vector3, distance: number): void {
+    for (const sign of [1, -1]) {
+      out.copy(_c).addScaledVector(_n, 1.0).addScaledVector(_side, sign * distance).addScaledVector(_t, -1.0);
+      if (this.kit.compartmentAt(out).label === 'Cytosol') return;
+    }
+    out.copy(_c).addScaledVector(_n, distance + 1.2).addScaledVector(_t, -1.0);
   }
 
   getProcessProgress(entityId: string): number | null {
@@ -319,13 +333,13 @@ diffuseColor.rgb *= mix(0.62, 1.0, pf) * mix(0.72, 1.12, dimer);`,
       if (m.kind === 'kinesin' && firstKinesin) {
         firstKinesin = false;
         this.motorPos.copy(_c).addScaledVector(_n, MT_R + 0.75);
-        this.motorView.copy(_c).addScaledVector(_n, 1.0).addScaledVector(_side, 2.5).addScaledVector(_t, -1.0);
+        this.placeView(this.motorView, 2.5);
         this.stepProgress = p;
       }
       if (m.kind === 'dynein' && firstDynein) {
         firstDynein = false;
         this.dyneinPos.copy(_c).addScaledVector(_n, MT_R + 0.75);
-        this.dyneinView.copy(_c).addScaledVector(_n, 1.0).addScaledVector(_side, 2.6).addScaledVector(_t, -1.0);
+        this.placeView(this.dyneinView, 2.6);
       }
     }
     for (const kind of ['kinesin', 'dynein'] as const) {
