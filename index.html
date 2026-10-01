@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Fly through a living human beta cell in first person. Inspect every organelle and watch its real molecular machinery work." />
+    <title>Cytonaut: inside a living cell</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2306222e' stroke='%2359e0d0' stroke-width='2'/%3E%3Ccircle cx='13' cy='15' r='6' fill='%238e6cff'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <canvas id="scene" aria-label="3D view inside the cell"></canvas>
+
+    <div id="fade"></div>
+    <div id="ripple"></div>
+
+    <!-- HUD -->
+    <div id="hud" hidden>
+      <div class="hud-tl">
+        <div class="eyebrow">You are in</div>
+        <div id="compartment" class="compartment">Cytosol</div>
+        <div id="mode-line" class="mode-line"></div>
+      </div>
+
+      <div class="hud-tr glass">
+        <div class="eyebrow">Cell state</div>
+        <div class="state-row"><span>Blood glucose</span><b id="st-glucose">4.5 mM</b></div>
+        <div class="state-row"><span>ATP / ADP</span><span class="meter"><i id="st-atp"></i></span></div>
+        <div class="state-row"><span>Membrane potential</span><b id="st-vm">-70 mV</b></div>
+        <div id="st-stage" class="stage">Resting</div>
+      </div>
+
+      <div id="crosshair"><i></i></div>
+      <div id="tag" class="tag" hidden>
+        <div id="tag-name" class="tag-name"></div>
+        <div id="tag-sub" class="tag-sub"></div>
+      </div>
+
+      <div class="hud-bl">
+        <canvas id="navigator" width="132" height="132" aria-label="Position in the cell"></canvas>
+        <div class="scale glass">
+          <div class="scale-bar"><i id="scale-line"></i></div>
+          <div id="scale-label" class="scale-label">1 µm</div>
+          <div id="scale-target" class="scale-target"></div>
+        </div>
+      </div>
+
+      <div class="hud-br">
+        <div id="time-chip" class="chip">Processes 1×</div>
+        <div id="xray-chip" class="chip" hidden>Cutaway on</div>
+        <div class="keys">
+          <span><kbd>E</kbd> inspect</span><span><kbd>Tab</kbd> codex</span><span><kbd>T</kbd> tour</span><span><kbd>G</kbd> story</span><span><kbd>X</kbd> cutaway</span><span><kbd>Esc</kbd> menu</span>
+        </div>
+      </div>
+
+      <div id="caption" class="caption glass" hidden>
+        <div class="caption-head">
+          <span id="caption-step" class="eyebrow"></span>
+          <span id="caption-real" class="real"></span>
+        </div>
+        <div id="caption-title" class="caption-title"></div>
+        <p id="caption-text"></p>
+        <div class="caption-foot">
+          <span><kbd>←</kbd> <kbd>→</kbd> step</span><span><kbd>E</kbd> details</span><span>Move to take over</span>
+          <span class="bar"><i id="caption-progress"></i></span>
+        </div>
+      </div>
+      <div id="coach" class="coach glass" hidden>
+        <div class="coach-head"><span class="eyebrow">Getting started</span><span id="coach-dots" class="coach-dots"></span></div>
+        <div id="coach-text" class="coach-text"></div>
+      </div>
+      <div id="toast" class="toast" hidden></div>
+      <div id="landmarks" class="landmarks"></div>
+    </div>
+
+    <!-- Info panel -->
+    <aside id="panel" class="panel glass" hidden aria-label="Details"></aside>
+
+    <!-- Codex -->
+    <section id="codex" class="overlay" hidden aria-label="Codex">
+      <div class="overlay-inner">
+        <header class="overlay-head">
+          <div>
+            <div class="eyebrow">Codex</div>
+            <h2>Everything in this cell</h2>
+          </div>
+          <div class="codex-tools">
+            <div id="codex-progress" class="progress-pill"></div>
+            <input id="codex-search" type="search" placeholder="Search structures" autocomplete="off" spellcheck="false" />
+            <button id="codex-close" class="btn ghost">Close <kbd>Tab</kbd></button>
+          </div>
+        </header>
+        <div id="codex-grid" class="codex-grid"></div>
+      </div>
+    </section>
+
+    <!-- Pause / settings -->
+    <section id="menu" class="overlay" hidden aria-label="Menu">
+      <div class="menu-card glass">
+        <div class="eyebrow">Paused</div>
+        <h2>Cytonaut</h2>
+        <div class="menu-actions">
+          <button id="menu-resume" class="btn primary">Resume</button>
+          <button id="menu-tour" class="btn">Guided tour</button>
+          <button id="menu-story" class="btn">Follow an insulin molecule</button>
+          <button id="menu-codex" class="btn">Open codex</button>
+        </div>
+        <div class="settings">
+          <label>Quality
+            <select id="set-quality"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+          </label>
+          <label>Mouse sensitivity <input id="set-sens" type="range" min="0.3" max="2.5" step="0.1" /></label>
+          <label class="check"><input id="set-invert" type="checkbox" /> Invert Y</label>
+          <label class="check"><input id="set-motion" type="checkbox" /> Reduce motion</label>
+          <label class="check"><input id="set-labels" type="checkbox" /> Name tags</label>
+          <label class="check"><input id="set-sound" type="checkbox" /> Sound</label>
+        </div>
+        <div class="controls-grid" id="controls-grid"></div>
+        <p class="fine">Changing quality reloads the cell.</p>
+      </div>
+    </section>
+
+    <!-- Click to resume -->
+    <button id="resume" class="resume" hidden>Click to resume</button>
+
+    <!-- Start -->
+    <section id="start" class="start">
+      <div class="start-inner">
+        <div class="eyebrow">A first-person journey, 1 unit = 100 nanometres</div>
+        <h1>Cytonaut</h1>
+        <p class="lede">You are a speck adrift inside a living human beta cell, the cell that makes insulin. Fly anywhere. Point at anything to learn what it is and what it does. Every machine you see is running.</p>
+        <div id="start-status" class="start-status">Building the cell…</div>
+        <div class="start-actions">
+          <button id="enter-tour" class="btn primary big" disabled>Take the guided tour</button>
+          <button id="enter" class="btn big" disabled>Explore on my own</button>
+        </div>
+        <div class="controls-grid" id="start-controls"></div>
+        <p id="mobile-note" class="note" hidden>This experience needs a keyboard and mouse. On a phone or tablet you can watch the cell, but not fly through it.</p>
+        <p class="fine"><b>About accuracy.</b> Organelles are drawn at their true relative sizes. Molecular machines are enlarged, usually 2 to 8 times, and their numbers reduced, so you can see them work; every process is slowed, and each entry says by how much. You can pass through membranes, which a real particle could not. Each entry lists what was simplified.</p>
+      </div>
+    </section>
+
+    <section id="unsupported" class="start" hidden>
+      <div class="start-inner">
+        <h1>Cytonaut</h1>
+        <p class="lede">This experience needs WebGL 2, which this browser or device does not provide. Try a current version of Chrome, Edge, Firefox or Safari on a computer with a graphics card.</p>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

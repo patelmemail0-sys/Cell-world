@@ -1,0 +1,23 @@
+{
+  "name": "cytonaut",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A first-person, scientifically grounded journey inside a living human pancreatic beta cell.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "typescript": "5.9",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}
