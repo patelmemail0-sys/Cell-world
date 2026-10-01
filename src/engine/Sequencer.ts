@@ -34,6 +34,8 @@ export class Sequencer {
   private readonly from = new THREE.Vector3();
   private readonly prevTarget = new THREE.Vector3();
   private readonly cargoPos = new THREE.Vector3();
+  /** 0..1 through the current stop's hold, for anything that plays in step with the caption. */
+  holdProgress = 0;
   onChange?: (view: SequenceView) => void;
   onCut?: () => void;
 
@@ -112,6 +114,7 @@ export class Sequencer {
     this.duration = this.reducedMotion ? 0.001 : THREE.MathUtils.clamp(dist / 16, 2.2, 7);
     this.phase = 'fly';
     this.t = 0;
+    this.holdProgress = 0;
     if (this.reducedMotion) this.onCut?.();
     this.onChange?.(this.view);
   }
@@ -147,6 +150,7 @@ export class Sequencer {
       this.player.drive(_p, target, dt, 4);
       this.cargoPos.copy(target);
       if (this.mode === 'travel') return this.stop();
+      this.holdProgress = Math.min(1, this.t / Math.max(0.1, stop.hold));
       if (this.t > stop.hold) this.next();
     }
     // The story's tracked cargo: a small swirl marking "our" insulin molecule.

@@ -43,8 +43,21 @@ export const STAGE_LABEL: Record<GsisStage, string> = {
 
 const bump = (x: number, a: number, b: number, c: number, d: number): number => smoothstep(a, b, x) * (1 - smoothstep(c, d, x));
 
+/**
+ * The story pins the loop to the stage it is describing, so that what the caption says is
+ * what the cell is doing. `range` is the slice of the loop to play; `t` runs 0..1 across it.
+ */
+export const storyBeat: { range: [number, number] | null; t: number } = { range: null, t: 0 };
+let phaseOffset = 0;
+
 export function computeState(processTime: number, out: CellState): CellState {
-  const phase = (((processTime / GSIS_PERIOD) % 1) + 1) % 1;
+  const natural = (((processTime / GSIS_PERIOD + phaseOffset) % 1) + 1) % 1;
+  let phase = natural;
+  if (storyBeat.range) {
+    phase = storyBeat.range[0] + (storyBeat.range[1] - storyBeat.range[0]) * Math.min(1, Math.max(0, storyBeat.t));
+    // Keep the free-running clock in step, so releasing the pin does not jump.
+    phaseOffset += phase - natural;
+  }
   out.phase = phase;
   const glucose = bump(phase, 0.12, 0.22, 0.72, 0.86);
   out.glucoseMM = 4.5 + 7.5 * glucose;

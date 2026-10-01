@@ -7,7 +7,7 @@ import { Picker } from './engine/Picker';
 import { Sequencer } from './engine/Sequencer';
 import { Ambience } from './engine/Audio';
 import { Cell } from './world/Cell';
-import { cellState } from './world/state';
+import { cellState, storyBeat } from './world/state';
 import type { FrameCtx } from './world/types';
 import { ALL_ENTRIES, entry } from './content';
 import { v3 } from './fx/geom';
@@ -116,7 +116,6 @@ function run(engine: Engine, store: Store, canvas: HTMLCanvasElement, debug: boo
   let pt = 0;
   let scaleIdx = 2;
   let processPaused = false;
-  let holdStart = 0;
   // While a panel is open the cell slows so each step of the process can be read as it happens.
   let inspectScale = 1;
   let progressRate: number | null = null;
@@ -250,7 +249,6 @@ function run(engine: Engine, store: Store, canvas: HTMLCanvasElement, debug: boo
     if (e) hud.flash(`Discovered: ${e.name}  (${total} / ${ALL_ENTRIES.length})`);
   };
   sequencer.onChange = (view) => {
-    holdStart = time;
     hud.setModeLine(view.mode === 'tour' ? 'Guided tour' : view.mode === 'story' ? 'Following an insulin molecule' : view.mode === 'travel' ? 'Travelling' : '');
     if (view.arrived && view.stop && view.mode !== 'travel') store.discover(view.stop.entity);
     // Leaving a tour for the first time: teach the controls.
@@ -395,6 +393,10 @@ function run(engine: Engine, store: Store, canvas: HTMLCanvasElement, debug: boo
         hud.flash('You have the controls.');
       }
       sequencer.update(dt, time);
+      // While the story describes a stage of the secretion loop, the cell plays that stage.
+      const beat = sequencer.mode === 'story' ? sequencer.view.stop?.beat : undefined;
+      storyBeat.range = beat ?? null;
+      storyBeat.t = sequencer.view.arrived ? sequencer.holdProgress : 0;
       player.update(dt);
     } else {
       // Attract mode behind the start screen: a slow drift around the spawn point.
@@ -418,7 +420,7 @@ function run(engine: Engine, store: Store, canvas: HTMLCanvasElement, debug: boo
       hud.setState(cellState);
       hud.setTimeScale(TIME_SCALES[scaleIdx], processPaused, inspectScale);
       const view = sequencer.view;
-      hud.setSequence(view, view.arrived && view.stop ? Math.min(1, (time - holdStart) / Math.max(0.1, view.stop.hold)) : 0);
+      hud.setSequence(view, view.arrived ? sequencer.holdProgress : 0);
       hud.update(dt);
       hud.drawNavigator(dt, cell.layout, player.position, player.yaw);
       landmarks.enabled = store.settings.labels;

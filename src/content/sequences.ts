@@ -12,6 +12,8 @@ export interface Stop {
   hold: number;
   /** Real elapsed time in the life of the molecule (story only). */
   real?: string;
+  /** Slice of the glucose-to-insulin loop (0..1) the cell plays while at this stop. */
+  beat?: [number, number];
 }
 
 export const TOUR: Stop[] = [
@@ -39,20 +41,20 @@ export const TOUR: Stop[] = [
 ];
 
 export const STORY: Stop[] = [
-  { anchor: 'rna-pol-ii', entity: 'rna-pol-ii', hold: 13, real: '0 min', title: '1. Reading the insulin gene', caption: 'RNA polymerase II moves along the insulin gene on chromosome 11, building a messenger RNA copy. Only beta cells read this gene at a high rate.' },
-  { anchor: 'nuclear-pore', entity: 'nuclear-pore', hold: 11, real: 'a few minutes', title: '2. Export', caption: 'The transcript is capped, spliced and given a poly-A tail, then carried out to the cytoplasm through a nuclear pore.' },
-  { anchor: 'srp', entity: 'srp', hold: 12, real: 'minutes', title: '3. Targeting to the ER', caption: 'A ribosome starts translating. The first stretch of the new chain is a signal peptide; the signal recognition particle grabs it, pauses translation and delivers the ribosome to the ER membrane.' },
-  { anchor: 'sec61', entity: 'sec61', hold: 13, real: 'under a minute to translate', title: '4. Into the ER', caption: 'The chain is threaded through the Sec61 channel as it is made. Signal peptidase clips off the signal peptide, turning preproinsulin (110 amino acids) into proinsulin (86).' },
-  { anchor: 'pdi', entity: 'pdi', hold: 11, real: 'minutes', title: '5. Folding', caption: 'In the ER lumen, proinsulin folds and protein disulfide isomerase forms its three disulfide bonds. Proinsulin is not glycosylated.' },
-  { anchor: 'er-exit-site', entity: 'copii-vesicle', hold: 11, real: 'about 10-20 min', title: '6. Leaving the ER', caption: 'Correctly folded proinsulin is packed into COPII-coated vesicles at ER exit sites and carried to the Golgi.' },
-  { anchor: 'cis-golgi', entity: 'golgi', hold: 10, real: 'about 20-30 min', title: '7. Through the Golgi', caption: 'Proinsulin enters at the cis face and moves through the stack toward the trans side.' },
-  { anchor: 'tgn', entity: 'tgn', hold: 11, real: 'about 30 min', title: '8. Packaging', caption: 'At the trans-Golgi network, proinsulin is concentrated with zinc and its processing enzymes into immature secretory granules that bud off.' },
-  { anchor: 'prohormone-convertase', entity: 'prohormone-convertase', hold: 13, real: 'about 1-2 hours', title: '9. Becoming insulin', caption: 'The granule acidifies. Prohormone convertases PC1/3 and PC2 cut proinsulin, carboxypeptidase E trims the ends, and C-peptide is released. Insulin and zinc crystallize into the dense core.' },
-  { anchor: 'kinesin', entity: 'kinesin', hold: 11, real: 'hours to days in storage', title: '10. Delivery', caption: 'Kinesin carries the mature granule along microtubules to the cell edge, where it waits, sometimes for days.' },
-  { anchor: 'glut', entity: 'glut', hold: 11, real: 'after a meal', title: '11. Glucose arrives', caption: 'Blood glucose rises. Glucose enters through GLUT1 transporters by facilitated diffusion, so the level inside tracks the level in the blood.' },
-  { anchor: 'glucokinase', entity: 'glucokinase', hold: 11, real: 'seconds', title: '12. The glucose sensor', caption: 'Glucokinase phosphorylates glucose. Its rate rises steeply across the normal blood glucose range, which is what makes it the cell\'s glucose sensor.' },
-  { anchor: 'atp-synthase', entity: 'atp-synthase', hold: 12, real: 'tens of seconds', title: '13. ATP rises', caption: 'Glycolysis and the mitochondria turn that glucose into ATP. The ratio of ATP to ADP in the cytosol climbs.' },
-  { anchor: 'katp-channel', entity: 'katp-channel', hold: 13, real: 'about a minute', title: '14. K_ATP channels close', caption: 'ATP binds the K_ATP channel and shuts it. With potassium no longer leaking out, the membrane voltage rises from about -70 mV. Sulfonylurea drugs for type 2 diabetes close this same channel.' },
-  { anchor: 'cav-channel', entity: 'cav-channel', hold: 12, real: 'milliseconds per spike', title: '15. Calcium enters', caption: 'Depolarization opens voltage-gated calcium channels. The membrane fires bursts of action potentials and calcium floods in with each one.' },
-  { anchor: 'snare-complex', entity: 'snare-complex', hold: 14, real: 'milliseconds', title: '16. Release', caption: 'Calcium triggers SNARE proteins to zipper the docked granule onto the membrane. A fusion pore opens, the crystal dissolves, and insulin leaves the cell for the bloodstream.' },
+  { anchor: 'rna-pol-ii', entity: 'rna-pol-ii', beat: [0.02, 0.1], hold: 13, real: '0 min', title: '1. Reading the insulin gene', caption: 'RNA polymerase II moves along the insulin gene on chromosome 11, building a messenger RNA copy. Only beta cells read this gene at a high rate.' },
+  { anchor: 'nuclear-pore', entity: 'nuclear-pore', beat: [0.02, 0.1], hold: 11, real: 'a few minutes', title: '2. Export', caption: 'The transcript is capped, spliced and given a poly-A tail, then carried out to the cytoplasm through a nuclear pore.' },
+  { anchor: 'srp', entity: 'srp', beat: [0.02, 0.1], hold: 12, real: 'minutes', title: '3. Targeting to the ER', caption: 'A ribosome starts translating. The first stretch of the new chain is a signal peptide; the signal recognition particle grabs it, pauses translation and delivers the ribosome to the ER membrane.' },
+  { anchor: 'sec61', entity: 'sec61', beat: [0.02, 0.1], hold: 13, real: 'under a minute to translate', title: '4. Into the ER', caption: 'The chain is threaded through the Sec61 channel as it is made. Signal peptidase clips off the signal peptide, turning preproinsulin (110 amino acids) into proinsulin (86).' },
+  { anchor: 'pdi', entity: 'pdi', beat: [0.02, 0.1], hold: 11, real: 'minutes', title: '5. Folding', caption: 'In the ER lumen, proinsulin folds and protein disulfide isomerase forms its three disulfide bonds. Proinsulin is not glycosylated.' },
+  { anchor: 'er-exit-site', entity: 'copii-vesicle', beat: [0.02, 0.1], hold: 11, real: 'about 10-20 min', title: '6. Leaving the ER', caption: 'Correctly folded proinsulin is packed into COPII-coated vesicles at ER exit sites and carried to the Golgi.' },
+  { anchor: 'cis-golgi', entity: 'golgi', beat: [0.02, 0.1], hold: 10, real: 'about 20-30 min', title: '7. Through the Golgi', caption: 'Proinsulin enters at the cis face and moves through the stack toward the trans side.' },
+  { anchor: 'tgn', entity: 'tgn', beat: [0.02, 0.1], hold: 11, real: 'about 30 min', title: '8. Packaging', caption: 'At the trans-Golgi network, proinsulin is concentrated with zinc and its processing enzymes into immature secretory granules that bud off.' },
+  { anchor: 'prohormone-convertase', entity: 'prohormone-convertase', beat: [0.02, 0.1], hold: 13, real: 'about 1-2 hours', title: '9. Becoming insulin', caption: 'The granule acidifies. Prohormone convertases PC1/3 and PC2 cut proinsulin, carboxypeptidase E trims the ends, and C-peptide is released. Insulin and zinc crystallize into the dense core.' },
+  { anchor: 'kinesin', entity: 'kinesin', beat: [0.02, 0.1], hold: 11, real: 'hours to days in storage', title: '10. Delivery', caption: 'Kinesin carries the mature granule along microtubules to the cell edge, where it waits, sometimes for days.' },
+  { anchor: 'glut', entity: 'glut', hold: 11, beat: [0.1, 0.22], real: 'after a meal', title: '11. Glucose arrives', caption: 'Blood glucose rises. Glucose enters through GLUT1 transporters by facilitated diffusion, so the level inside tracks the level in the blood.' },
+  { anchor: 'glucokinase', entity: 'glucokinase', hold: 11, beat: [0.18, 0.26], real: 'seconds', title: '12. The glucose sensor', caption: 'Glucokinase phosphorylates glucose. Its rate rises steeply across the normal blood glucose range, which is what makes it the cell\'s glucose sensor.' },
+  { anchor: 'atp-synthase', entity: 'atp-synthase', hold: 12, beat: [0.22, 0.33], real: 'tens of seconds', title: '13. ATP rises', caption: 'Glycolysis and the mitochondria turn that glucose into ATP. The ratio of ATP to ADP in the cytosol climbs.' },
+  { anchor: 'katp-channel', entity: 'katp-channel', hold: 13, beat: [0.28, 0.44], real: 'about a minute', title: '14. K_ATP channels close', caption: 'ATP binds the K_ATP channel and shuts it. With potassium no longer leaking out, the membrane voltage rises from about -70 mV. Sulfonylurea drugs for type 2 diabetes close this same channel.' },
+  { anchor: 'cav-channel', entity: 'cav-channel', hold: 12, beat: [0.45, 0.56], real: 'milliseconds per spike', title: '15. Calcium enters', caption: 'Depolarization opens voltage-gated calcium channels. The membrane fires bursts of action potentials and calcium floods in with each one.' },
+  { anchor: 'snare-complex', entity: 'snare-complex', hold: 14, beat: [0.56, 0.8], real: 'milliseconds', title: '16. Release', caption: 'Calcium triggers SNARE proteins to zipper the docked granule onto the membrane. A fusion pore opens, the crystal dissolves, and insulin leaves the cell for the bloodstream.' },
 ];

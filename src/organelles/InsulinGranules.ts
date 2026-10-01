@@ -4,7 +4,7 @@ import { blob, mergeColored, quatFromY, setInstance, v3, smoothstep, perpendicul
 import type { ParticlePool } from '../fx/particles';
 import type { BuildContext, FrameCtx, Organelle } from '../world/types';
 import type { Layout } from '../world/layout';
-import { cellState } from '../world/state';
+import { cellState, storyBeat } from '../world/state';
 import type { Golgi } from './Golgi';
 
 // Insulin secretory granules: about 300 nm vesicles with a dense crystalline core of
@@ -14,7 +14,7 @@ import type { Golgi } from './Golgi';
 
 const DOCKED = 26;
 const IMMATURE = 6;
-const SPRAY = 6;
+const SPRAY = 8;
 
 interface Docked {
   index: number;
@@ -37,7 +37,7 @@ export class InsulinGranules implements Organelle {
   private readonly convertase: THREE.InstancedMesh;
   private readonly paths: { from: THREE.Vector3; mid: THREE.Vector3; to: THREE.Vector3; radius: number }[] = [];
   private readonly immPos = new THREE.Vector3();
-  private readonly pale = new THREE.Color(0xfff8e4);
+  private readonly pale = new THREE.Color(0xd9ccb0);
   private readonly gold = new THREE.Color(PALETTE.granuleCore);
 
   constructor(layout: Layout, golgi: Golgi, ctx: BuildContext) {
@@ -74,7 +74,7 @@ export class InsulinGranules implements Organelle {
       m.frustumCulled = false;
       this.group.add(m);
     }
-    kit.pickable(this.halo, { entity: 'insulin-granule', xray: true });
+    kit.pickable(this.halo, { entity: 'insulin-granule', xray: true, passThrough: 2.2 });
     kit.membrane(this.halo, { depth: 2, xray: true });
     kit.pickable(this.core, { entity: 'insulin-hexamer' });
 
@@ -113,14 +113,14 @@ export class InsulinGranules implements Organelle {
 
     // Immature granules travelling out from the trans-Golgi network.
     this.immHalo = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 20, 14), haloMat, IMMATURE);
-    this.immCore = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), solid(0xffffff, { emissiveIntensity: 0.3 }), IMMATURE);
+    this.immCore = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), solid(0xffffff, { emissive: 0x8a6a20, emissiveIntensity: 0.25, bumpScale: 4 }), IMMATURE);
     this.convertase = new THREE.InstancedMesh(blob(0.14, 1, 0.3, 4, [1.3, 0.9, 1]), solid(0xff7a5c, { emissiveIntensity: 0.8 }), IMMATURE * 2);
     for (const m of [this.immHalo, this.immCore, this.convertase]) {
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       m.frustumCulled = false;
       this.group.add(m);
     }
-    kit.pickable(this.immHalo, { entity: 'insulin-granule', xray: true });
+    kit.pickable(this.immHalo, { entity: 'insulin-granule', xray: true, passThrough: 2.2 });
     kit.pickable(this.immCore, { entity: 'insulin-hexamer' });
     kit.pickable(this.convertase, { entity: 'prohormone-convertase' });
     for (let i = 0; i < IMMATURE; i++) {
@@ -138,7 +138,7 @@ export class InsulinGranules implements Organelle {
     kit.anchor('insulin-hexamer', dockedCenter, dockedCenter.clone().addScaledVector(d0.normal, -3.4));
     const snarePos = d0.surface.clone().addScaledVector(d0.normal, -0.3);
     kit.anchor('snare-complex', snarePos, snarePos.clone().addScaledVector(perpendicular(d0.normal), 2.1).addScaledVector(d0.normal, -0.45));
-    kit.anchor('prohormone-convertase', () => this.immPos, () => this.immPos.clone().add(new THREE.Vector3(2.4, 1.2, 2.4)));
+    kit.anchor('prohormone-convertase', () => this.immPos, () => this.immPos.clone().add(new THREE.Vector3(3.6, 1.6, 3.6)));
   }
 
   getProcessProgress(entityId: string): number | null {
@@ -155,11 +155,13 @@ export class InsulinGranules implements Organelle {
     this.insulin.hideAll();
     this.docked.forEach((d, k) => {
       // Each docked granule takes its turn while Ca2+ is high.
-      const t = (((pt * 0.11 + d.phase) % 1) + 1) % 1;
+      // During the story's final step the showcase granule fuses in time with the caption.
+      const staged = k === 0 && storyBeat.range !== null && secreting > 0.25;
+      const t = staged ? 0.04 + storyBeat.t * 0.44 : (((pt * 0.11 + d.phase) % 1) + 1) % 1;
       const firing = secreting > 0.25 && t < 0.5;
       const u = firing ? t / 0.5 : 0;
       const pull = firing ? smoothstep(0, 0.25, u) : 0;
-      const fuse = firing ? smoothstep(0.25, 0.6, u) : 0;
+      const fuse = firing ? smoothstep(0.25, 0.8, u) : 0;
       const refill = !firing && secreting > 0.25 ? smoothstep(0.5, 0.75, t) : 1;
       const gap = THREE.MathUtils.lerp(0.5, 0.02, pull);
       const scale = d.radius * (1 - fuse * 0.92) * (firing ? 1 : refill);
@@ -180,11 +182,12 @@ export class InsulinGranules implements Organelle {
       }
       if (firing && fuse > 0.05) {
         for (let j = 0; j < SPRAY; j++) {
-          const w = Math.max(0, u - 0.3) / 0.7;
+          // Insulin streams out through the fusion pore, each particle a little behind the last.
+          const w = Math.min(1, Math.max(0, u - 0.3 - j * 0.035) / 0.6);
           const ang = j * 1.05 + k;
-          const spread = w * (1.2 + (j % 3) * 0.5);
-          this.insulin.setV(k * SPRAY + j, _p.copy(d.surface).addScaledVector(d.normal, 0.3 + w * (3 + (j % 2) * 2)).addScaledVector(_a, Math.cos(ang) * spread).addScaledVector(_b, Math.sin(ang) * spread));
-          this.insulin.size(k * SPRAY + j, 0.22 * (1 - w * 0.6));
+          const spread = w * (0.9 + (j % 3) * 0.5);
+          this.insulin.setV(k * SPRAY + j, _p.copy(d.surface).addScaledVector(d.normal, 0.25 + w * (2.6 + (j % 2) * 1.6)).addScaledVector(_a, Math.cos(ang) * spread).addScaledVector(_b, Math.sin(ang) * spread));
+          this.insulin.size(k * SPRAY + j, w > 0 ? 0.24 * (1 - w * 0.5) : 0);
         }
       }
     });
@@ -207,8 +210,9 @@ export class InsulinGranules implements Organelle {
       this.immCore.setColorAt(i, _col.copy(this.pale).lerp(this.gold, mature));
       for (let j = 0; j < 2; j++) {
         const a = pt * 0.3 + j * Math.PI + i;
-        _p.copy(_c).add(_a.set(Math.cos(a), Math.sin(a * 0.7), Math.sin(a)).multiplyScalar(path.radius * 0.78));
-        setInstance(this.convertase, i * 2 + j, _p, null, grow * (1 - mature * 0.5));
+        // The enzymes work in the fluid between the membrane and the condensing core.
+        _p.copy(_c).add(_a.set(Math.cos(a), Math.sin(a * 0.7), Math.sin(a)).normalize().multiplyScalar(path.radius * 0.93));
+        setInstance(this.convertase, i * 2 + j, _p, null, grow * 0.8);
       }
       if (i === 0) {
         this.immPos.copy(_c);
