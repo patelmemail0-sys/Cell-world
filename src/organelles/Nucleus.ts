@@ -79,7 +79,7 @@ export class Nucleus implements Organelle {
     kit.pickable(laminaHit, { entity: 'nuclear-lamina' });
 
     // --- nuclear pore complexes (true scale: about 120 nm across) ------------------------
-    const dirs = fibonacciSphere(210);
+    const dirs = fibonacciSphere(ctx.quality === 'low' ? 110 : 210);
     const poreSites: Site[] = dirs.map((d) => {
       const pos = new THREE.Vector3(d.x * this.radii.x, d.y * this.radii.y, d.z * this.radii.z);
       const normal = new THREE.Vector3(pos.x / this.radii.x ** 2, pos.y / this.radii.y ** 2, pos.z / this.radii.z ** 2).normalize();

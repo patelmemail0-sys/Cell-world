@@ -34,6 +34,7 @@ export class PlasmaMembrane implements Organelle {
   private patchKey = '';
   private readonly pits: ClathrinPit[] = [];
   private readonly swaps: HeroSwap[] = [];
+  private patchRadius = 18;
   private progress = new Map<string, number>();
 
   constructor(layout: Layout, ctx: BuildContext) {
@@ -76,6 +77,9 @@ export class PlasmaMembrane implements Organelle {
     ];
     const tangent = perpendicular(showcase);
     const bitangent = new THREE.Vector3().crossVectors(showcase, tangent);
+    const few = ctx.quality === 'low' ? 0.5 : 1;
+    for (const spec of specs) spec.count = Math.max(8, Math.round(spec.count * few));
+    this.patchRadius = ctx.quality === 'low' ? 12 : 18;
     specs.forEach((spec, si) => {
       const material = solid(spec.color, { emissiveIntensity: 0.2, roughness: 0.5, bumpScale: 16 });
       const mesh = new THREE.InstancedMesh(spec.geometry(false), material, spec.count);
@@ -329,7 +333,7 @@ transformed.z += cos(uTime * 1.9 + ph * 1.3) * flex;`,
     const key = `${ax}:${Math.sign(major)}:${Math.round(ci / 5)}:${Math.round(cj / 5)}`;
     if (key === this.patchKey) return;
     this.patchKey = key;
-    const R = 18;
+    const R = this.patchRadius;
     let li = 0;
     let chi = 0;
     const dir = new THREE.Vector3();
@@ -472,15 +476,22 @@ function lateralOffset(site: Site, j: number, n: number, r: number): THREE.Vecto
 }
 
 function cyl(r: number, h: number, y: number, x = 0, z = 0, seg = 8): THREE.BufferGeometry {
-  // Rounded ends read as protein helices rather than machined pegs.
+  // Up close, rounded ends read as protein helices rather than machined pegs. The far model
+  // (few segments) keeps plain cylinders: a fifth of the triangles, and nobody can tell.
+  if (seg <= 6) return place(new THREE.CylinderGeometry(r, r, h, seg), [x, y, z]);
   return place(new THREE.CapsuleGeometry(r, Math.max(0.01, h - 2 * r), 3, seg), [x, y, z]);
+}
+
+/** A tilted helix: capsule for the near model, plain cylinder for the far one. */
+function helix(r: number, len: number, seg: number): THREE.BufferGeometry {
+  return seg <= 6 ? new THREE.CylinderGeometry(r, r, len + 2 * r, seg) : new THREE.CapsuleGeometry(r, len, 3, seg);
 }
 
 function lipidGeo(): THREE.BufferGeometry {
   // Phosphate head at the surface, two fatty-acid tails pointing into the bilayer core.
   const head = place(new THREE.IcosahedronGeometry(0.098, 1), [0, BILAYER / 2 - 0.05, 0]);
-  const t1 = place(new THREE.CylinderGeometry(0.026, 0.016, 0.2, 5), [0.036, 0.1, 0], new THREE.Euler(0, 0, 0.12));
-  const t2 = place(new THREE.CylinderGeometry(0.026, 0.016, 0.18, 5), [-0.036, 0.11, 0.01], new THREE.Euler(0.1, 0, -0.18));
+  const t1 = place(new THREE.CylinderGeometry(0.026, 0.016, 0.2, 4, 1, true), [0.036, 0.1, 0], new THREE.Euler(0, 0, 0.12));
+  const t2 = place(new THREE.CylinderGeometry(0.026, 0.016, 0.18, 4, 1, true), [-0.036, 0.11, 0.01], new THREE.Euler(0.1, 0, -0.18));
   return mergeColored([
     [head, 0xffc266],
     [t1, 0xf3e6c8],
@@ -559,7 +570,7 @@ function glutGeo(hi: boolean): THREE.BufferGeometry {
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2;
       parts.push(
-        place(new THREE.CapsuleGeometry(0.05, 0.58, 3, seg), [cx + Math.cos(a) * 0.1, 0, Math.sin(a) * 0.1], new THREE.Euler(0, 0, half ? -0.14 : 0.14)),
+        place(helix(0.05, 0.58, seg), [cx + Math.cos(a) * 0.1, 0, Math.sin(a) * 0.1], new THREE.Euler(0, 0, half ? -0.14 : 0.14)),
       );
     }
   }
@@ -572,7 +583,7 @@ function aquaporinGeo(hi: boolean): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 4; i++) {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    parts.push(cyl(0.15, 0.66, 0, Math.cos(a) * 0.2, Math.sin(a) * 0.2, hi ? 14 : 8));
+    parts.push(cyl(0.15, 0.66, 0, Math.cos(a) * 0.2, Math.sin(a) * 0.2, hi ? 14 : 6));
   }
   return merge(parts);
 }
@@ -584,7 +595,7 @@ function glp1rGeo(hi: boolean): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 7; i++) {
     const a = (i / 7) * Math.PI * 2;
-    parts.push(place(new THREE.CapsuleGeometry(0.052, 0.58, 3, hi ? 10 : 5), [Math.cos(a) * 0.16, 0, Math.sin(a) * 0.16], new THREE.Euler(Math.sin(a) * 0.12, 0, Math.cos(a) * 0.12)));
+    parts.push(place(helix(0.052, 0.58, hi ? 10 : 5), [Math.cos(a) * 0.16, 0, Math.sin(a) * 0.16], new THREE.Euler(Math.sin(a) * 0.12, 0, Math.cos(a) * 0.12)));
   }
   parts.push(place(blob(0.24, d, 0.3, 3), [0.04, 0.62, 0]));
   parts.push(place(blob(0.24, d, 0.3, 5), [0.1, -0.62, 0]));

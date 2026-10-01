@@ -83,12 +83,12 @@ export class InsulinGranules implements Organelle {
     // synaptobrevin from the granule (blue).
     const helix = (phase: number) => {
       const pts: THREE.Vector3[] = [];
-      for (let i = 0; i <= 14; i++) {
-        const u = i / 14;
+      for (let i = 0; i <= 10; i++) {
+        const u = i / 10;
         const a = phase + u * Math.PI * 1.6;
         pts.push(new THREE.Vector3(Math.cos(a) * 0.034, (u - 0.5) * 0.5, Math.sin(a) * 0.034));
       }
-      return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 14, 0.019, 5, false);
+      return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 10, 0.019, 4, false);
     };
     const snareGeo = mergeColored([
       [helix(0), 0xff5a5f],
