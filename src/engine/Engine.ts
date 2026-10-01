@@ -43,6 +43,23 @@ const LensShader = {
   `,
 };
 
+const SanitizeShader = {
+  uniforms: { tDiffuse: { value: null as THREE.Texture | null } },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse; varying vec2 vUv;
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      // NaN fails every comparison, so this keeps only finite, non-negative light.
+      vec3 rgb = vec3(c.r >= 0.0 ? c.r : 0.0, c.g >= 0.0 ? c.g : 0.0, c.b >= 0.0 ? c.b : 0.0);
+      gl_FragColor = vec4(min(rgb, vec3(64.0)), 1.0);
+    }
+  `,
+};
+
 export interface FrameStats {
   fps: number;
   frameMsP50: number;
@@ -76,6 +93,8 @@ export class Engine {
 
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
+    // A single invalid pixel would be smeared by the bloom blur into a black block; scrub them.
+    this.composer.addPass(new ShaderPass(SanitizeShader));
     this.bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.62, 0.62, 0.7);
     this.composer.addPass(this.bloom);
     this.lens = new ShaderPass(LensShader);

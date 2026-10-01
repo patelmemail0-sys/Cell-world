@@ -126,13 +126,13 @@ float memDots(vec3 p) {
         `float camD = length(vViewPosition);
 float nearK = 1.0 - smoothstep(uNear.x, uNear.y, camD);
 if (uDots > 0.0) outgoingLight *= mix(1.0, 0.72 + 0.5 * memDots(vMemPos * uDots), nearK);
-float fres = pow(1.0 - abs(dot(normalize(normal), normalize(vViewPosition))), uRimPower);
+float fres = pow(clamp(1.0 - abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0), uRimPower);
 outgoingLight += uRimColor * fres * uRimStrength * mix(1.0, 0.55, uXray);
 diffuseColor.a *= mix(min(1.0, uBaseAlpha + nearK * uNear.z), 1.0, fres) * mix(1.0, 0.1, uXray);
 #include <opaque_fragment>`,
       );
   };
-  m.customProgramCacheKey = () => 'membrane-v2';
+  m.customProgramCacheKey = () => 'membrane-v3';
   return m;
 }
 
@@ -160,11 +160,14 @@ float cyNoise(vec3 x){
              mix(mix(cyHash(i + vec3(0,0,1)), cyHash(i + vec3(1,0,1)), f.x), mix(cyHash(i + vec3(0,1,1)), cyHash(i + vec3(1,1,1)), f.x), f.y), f.z);
 }
 vec3 cyPerturb(vec3 surfPos, vec3 surfNorm, vec2 dHdxy, float faceDir){
-  vec3 sx = normalize(dFdx(surfPos)); vec3 sy = normalize(dFdy(surfPos));
+  vec3 dx = dFdx(surfPos); vec3 dy = dFdy(surfPos);
+  // Degenerate derivatives (edge-on or sub-pixel triangles) would normalize a zero vector.
+  if (dot(dx, dx) < 1e-16 || dot(dy, dy) < 1e-16) return surfNorm;
+  vec3 sx = normalize(dx); vec3 sy = normalize(dy);
   vec3 r1 = cross(sy, surfNorm); vec3 r2 = cross(surfNorm, sx);
   float det = dot(sx, r1) * faceDir;
-  vec3 grad = sign(det) * (dHdxy.x * r1 + dHdxy.y * r2);
-  return normalize(abs(det) * surfNorm - grad);
+  vec3 n = abs(det) * surfNorm - sign(det) * (dHdxy.x * r1 + dHdxy.y * r2);
+  return dot(n, n) > 1e-12 ? normalize(n) : surfNorm;
 }
 `;
 
@@ -206,12 +209,12 @@ diffuseColor.rgb *= 0.8 + 0.27 * cyH;`,
       )
       .replace(
         '#include <opaque_fragment>',
-        `float cyRim = pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 2.6);
+        `float cyRim = pow(clamp(1.0 - abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 2.6);
 outgoingLight += (diffuseColor.rgb * 0.9 + 0.1) * cyRim * uRim;
 #include <opaque_fragment>`,
       );
   };
-  m.customProgramCacheKey = () => 'solid-v1';
+  m.customProgramCacheKey = () => 'solid-v2';
   return m;
 }
 
